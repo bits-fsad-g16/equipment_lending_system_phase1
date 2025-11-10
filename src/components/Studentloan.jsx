@@ -1,55 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Table, Row, Col } from "react-bootstrap";
 
-function Studentloan() {
-  // Dummy data
-  const [loans] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      registerNo: "STU1025",
-      loanDetail: "Laptop borrowed for project work",
-      status: "Pending",
-    },
-    {
-      id: 2,
-      name: "John Doe",
-      registerNo: "STU1025",
-      loanDetail: "Microscope borrowed for lab experiment",
-      status: "Paid",
-    },
-  ]);
+function StudentDashboard() {
+  const [requests, setRequests] = useState([]);
+  const userIdString = localStorage.getItem("user_id");
+  const userId = userIdString ? parseInt(userIdString, 10) : null;
+
+  useEffect(() => {
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
+
+    fetch(`http://127.0.0.1:8000/request/my_requests/${userId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load requests");
+        return res.json();
+      })
+      .then(setRequests)
+      .catch((err) => alert(err.message));
+  }, [userId]);
 
   return (
     <Container className="py-5">
-      <h2 className="text-center mb-4">Student Loan Details</h2>
+      <h2 className="text-center mb-4">My Loan Requests</h2>
 
       <Row className="justify-content-center">
         <Col md={10}>
           <Table striped bordered hover responsive className="shadow-sm">
             <thead className="table-primary">
               <tr>
-                <th>Student Name</th>
-                <th>Register Number</th>
                 <th>Loan Detail</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {loans.map((loan) => (
-                <tr key={loan.id}>
-                  <td>{loan.name}</td>
-                  <td>{loan.registerNo}</td>
-                  <td>{loan.loanDetail}</td>
-                  <td
-                    className={
-                      loan.status === "Paid" ? "text-success" : "text-danger"
-                    }
-                  >
-                    {loan.status}
+              {requests.length > 0 ? (
+                requests.map((req) => (
+                  <tr key={req.id}>
+                    <td>{req.loan_detail || req.equipment_name}</td>
+                    <td
+                      className={
+                        req.status === "Returned" || req.status === "Approved"
+                          ? "text-success"
+                          : "text-danger"
+                      }
+                    >
+                      {req.status}
+                    </td>
+                    <td>{/* Optional: Add action buttons here */}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="text-center text-muted">
+                    No loan requests found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </Table>
         </Col>
@@ -58,4 +72,4 @@ function Studentloan() {
   );
 }
 
-export default Studentloan;
+export default StudentDashboard;

@@ -4,27 +4,34 @@ import { Container, Table, Button } from "react-bootstrap";
 function Approval() {
   const [requests, setRequests] = useState([]);
 
+  const fetchRequests = () => {
+    fetch("http://127.0.0.1:8000/request/pending") // plural 'requests' for consistency
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load requests");
+        return res.json();
+      })
+      .then(setRequests)
+      .catch(() => alert("Failed to load requests"));
+  };
 
   useEffect(() => {
-    const loadRequests = () => {
-      const stored = JSON.parse(localStorage.getItem("equipmentRequests")) || [];
-      setRequests(stored);
-    };
-
-    loadRequests(); 
-
-    const interval = setInterval(loadRequests, 2000); 
-    return () => clearInterval(interval); 
+    fetchRequests();
+    const interval = setInterval(fetchRequests, 8000);
+    return () => clearInterval(interval);
   }, []);
 
- 
   const handleAction = (id, action) => {
-    const updated = requests.map((req) =>
-      req.id === id ? { ...req, status: action } : req
-    );
+    const endpoint = 
+      action === "Approved"
+        ? `http://127.0.0.1:8000/request/${id}/approve`
+        : `http://127.0.0.1:8000/request/${id}/reject`;
 
-    setRequests(updated);
-    localStorage.setItem("equipmentRequests", JSON.stringify(updated));
+    fetch(endpoint, { method: "PUT" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`${action} failed`);
+        fetchRequests();
+      })
+      .catch(() => alert(`${action} failed`));
   };
 
   return (

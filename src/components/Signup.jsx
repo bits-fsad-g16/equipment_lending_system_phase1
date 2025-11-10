@@ -9,7 +9,7 @@ function Signup() {
     username: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    role: "",
   });
 
   const handleChange = (e) => {
@@ -19,11 +19,40 @@ function Signup() {
   const handleSignup = (e) => {
     e.preventDefault();
 
-    const { username, email, password, confirmPassword } = formData;
+    const { username, email, password, role } = formData;
 
-    if (password !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
+    // if (password !== confirmPassword) {
+    //   alert("Passwords do not match!");
+    //   return;
+    // }
+    // Payload must match FastAPI UserCreate
+    const payload = {
+      "username": username,
+      "email": email,
+      "password": password,
+      "role": role
+    }
+
+    try {
+      const res = fetch("http://127.0.0.1:8000/user/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      
+
+      if (res.status === 201) {
+        alert("Account created successfully!");
+        setTimeout(() => navigate("/"), 1500);
+      } else {
+        const data = res.json();
+        alert(data.detail || "Signup failed!");
+      }
+    } catch (err) {
+      alert("Could not connect to server!");
     }
 
     console.log("Signup details:", formData);
@@ -83,12 +112,12 @@ function Signup() {
             </Form.Group>
 
             <Form.Group className="mb-4" controlId="confirmPassword">
-              <Form.Label>Confirm Password</Form.Label>
+              <Form.Label>Role</Form.Label>
               <Form.Control
-                type="password"
-                placeholder="Confirm password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
+                type="role"
+                placeholder="Role"
+                name="role"
+                value={formData.role}
                 onChange={handleChange}
                 required
               />

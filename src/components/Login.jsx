@@ -5,40 +5,51 @@ import { Form, Button, Card } from "react-bootstrap";
 function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
-
-  // ✅ Dummy user data
-  const users = [
-    { username: "student1", password: "stud123", role: "student" },
-    { username: "staff1", password: "staff123", role: "staff" },
-    { username: "admin1", password: "admin123", role: "admin" },
-  ];
 
   const handleLogin = (e) => {
     e.preventDefault();
 
-    // ✅ Check credentials
-    const user = users.find(
-      (u) => u.username === username && u.password === password && u.role === role
-    );
+    const payload = {
+      email,
+      password,
+    };
 
-    if (user) {
-      console.log("✅ Login successful:", user);
-      localStorage.setItem("userRole", role);
+    console.log("Payload:", payload);
 
-      // ✅ Redirect based on role
-      if (role === "student") {
-        navigate("/student/dashboard");
-      } else if (role === "staff") {
-        navigate("/staff/dashboard");
-      } else if (role === "admin") {
-        navigate("/admin");
-      }
-    } else {
-      alert("❌ Invalid username, password, or role");
-    }
+    fetch("http://127.0.0.1:8000/user/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          return res.json().then((data) => {
+            // alert("Login successful");
+            localStorage.setItem("userRole", role);
+            console.log(data)
+            localStorage.setItem("accessToken", data.access_token);
+            localStorage.setItem("user_id", data.user_id)
+            console.log('acess token set')
+            if (role === "student") navigate("/student/dashboard");
+            else if (role === "staff") navigate("/staff/dashboard");
+            else if (role === "admin") navigate("/admin");
+          });
+        } else {
+          return res.json().then((errorData) => {
+            alert(errorData.detail || "Login failed!");
+          });
+        }
+      })
+      .catch((err) => {
+        alert("Could not connect to server!");
+      });
   };
+
 
   const handleForgotPassword = () => {
     navigate("/forgotpassword");
@@ -68,6 +79,17 @@ function Login() {
               />
             </Form.Group>
 
+            <Form.Group className="mb-3" controlId="email">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </Form.Group>
+
             <Form.Group className="mb-3" controlId="password">
               <Form.Label>Password</Form.Label>
               <Form.Control
@@ -85,9 +107,9 @@ function Login() {
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
               >
-                <option value="student">Student</option>
-                <option value="staff">Staff</option>
-                <option value="admin">Admin</option>
+                <option value="student">student</option>
+                <option value="staff">staff</option>
+                <option value="admin">admin</option>
               </Form.Select>
             </Form.Group>
 

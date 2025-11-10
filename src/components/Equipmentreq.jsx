@@ -5,25 +5,39 @@ import { useNavigate } from "react-router-dom";
 function Equipmentreq() {
   const navigate = useNavigate();
   const [equipments, setEquipments] = useState([]);
-  const [borrowed, setBorrowed] = useState([]); 
+  const [borrowed, setBorrowed] = useState([]);
   const [search, setSearch] = useState("");
 
-  
-  useEffect(() => {
-    const savedEquipments =
-      JSON.parse(localStorage.getItem("equipmentsList")) || [];
-    setEquipments(savedEquipments);
+  const userId = parseInt(localStorage.getItem("user_id"));
 
- 
-    const borrowedList =
-      JSON.parse(localStorage.getItem("borrowedEquipments")) || [];
-    setBorrowed(borrowedList);
-  }, []);
+  useEffect(() => {
+    if (!userId) {
+      alert("User ID not found. Please log in.");
+      return;
+    }
+
+    // Fetch available equipment list (could be all or filtered as per business logic)
+    fetch("http://127.0.0.1:8000/equipment/")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load equipment list");
+        return res.json();
+      })
+      .then(setEquipments)
+      .catch(() => alert("Failed to load equipment list"));
+
+    // Fetch borrowed equipment requests for current user
+    fetch(`http://127.0.0.1:8000/request/my_requests/${userId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load borrowed requests");
+        return res.json();
+      })
+      .then(setBorrowed)
+      .catch(() => alert("Failed to load borrowed requests"));
+  }, [userId]);
 
   const filteredEquipments = equipments.filter((eq) =>
     eq.name.toLowerCase().includes(search.toLowerCase())
   );
-
 
   const handleRequest = (itemName) => {
     navigate("/requestfrom", { state: { equipmentName: itemName } });
@@ -33,7 +47,6 @@ function Equipmentreq() {
     <Container className="py-5">
       <h2 className="text-center mb-4">Equipment Request</h2>
 
-      
       <Row className="mb-4 justify-content-center">
         <Col md={6}>
           <Form.Control
@@ -45,7 +58,6 @@ function Equipmentreq() {
         </Col>
       </Row>
 
- 
       <Row className="justify-content-center mb-5">
         <Col md={8}>
           <Table striped bordered hover responsive className="shadow-sm">
@@ -83,7 +95,6 @@ function Equipmentreq() {
         </Col>
       </Row>
 
-  
       <h4 className="text-center mb-3">Borrowed Equipments</h4>
       <Row className="justify-content-center">
         <Col md={10}>
@@ -100,9 +111,9 @@ function Equipmentreq() {
               {borrowed.length > 0 ? (
                 borrowed.map((item, index) => (
                   <tr key={index}>
-                    <td>{item.equipmentName}</td>
-                    <td>{item.borrowedDate}</td>
-                    <td>{item.dueDate}</td>
+                    <td>{item.equipment_name}</td>
+                    <td>{item.borrow_date}</td>
+                    <td>{item.return_date}</td>
                     <td>
                       <span
                         className={

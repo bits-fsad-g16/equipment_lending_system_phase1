@@ -3,18 +3,41 @@ import { Container, Table, Button, Badge } from "react-bootstrap";
 
 function Tracking() {
   const [requests, setRequests] = useState([]);
+  const userIdString = localStorage.getItem("user_id");
+  const userId = userIdString ? parseInt(userIdString, 10) : null;
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("equipmentRequests")) || [];
-    setRequests(stored);
-  }, []);
-  
+    if (!userId) {
+      alert("User ID not found");
+      return;
+    }
+
+    const fetchRequests = () => {
+      fetch(`http://127.0.0.1:8000/request/track`, {
+      method: "GET"})
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load requests");
+          return res.json();
+        })
+        .then(setRequests)
+        .catch(() => alert("Failed to load requests"));
+    };
+
+    fetchRequests();
+  }, [userId]);
+
   const handleReturn = (id) => {
-    const updated = requests.map((req) =>
-      req.id === id ? { ...req, status: "Returned" } : req
-    );
-    setRequests(updated);
-    localStorage.setItem("equipmentRequests", JSON.stringify(updated));
+    fetch(`http://127.0.0.1:8000/request/${id}/return`, {
+      method: "PUT",
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to mark returned");
+        // Re-fetch after successful return
+        return fetch(`http://127.0.0.1:8000/request/track`);
+      })
+      .then((res) => res.json())
+      .then(setRequests)
+      .catch(() => alert("Failed to mark returned"));
   };
 
   return (
@@ -41,7 +64,7 @@ function Tracking() {
             {requests.map((req, index) => (
               <tr key={req.id}>
                 <td>{index + 1}</td>
-                <td>{req.requestedBy}</td>
+                <td>{req.requestedBy?.username || req.requestedBy || "Unknown"}</td>
                 <td>{req.equipmentName}</td>
                 <td>{req.borrowDate}</td>
                 <td>{req.returnDate}</td>

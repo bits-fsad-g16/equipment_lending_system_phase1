@@ -19,26 +19,39 @@ function RequestForm() {
       return;
     }
 
+    // Prepare payload expected by your Flask API
     const newRequest = {
-      id: Date.now(),
-      equipmentName,
-      borrowDate,
-      returnDate,
-      requestedBy: studentName,
-      status: "Pending",
+      "equipment_name": equipmentName,
+      "borrow_date": borrowDate,
+      "return_date": returnDate,
+      "requested_by": studentName
+      // status can be set as default on backend if needed
     };
-
-    const existing = JSON.parse(localStorage.getItem("equipmentRequests")) || [];
-    existing.push(newRequest);
-    localStorage.setItem("equipmentRequests", JSON.stringify(existing));
-
-    alert("Request submitted successfully!");
-
-    setStudentName("");
-    setBorrowDate("");
-    setReturnDate("");
-
-    navigate("/student/dashboard");
+    console.log(newRequest)
+    fetch("http://127.0.0.1:8000/request/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newRequest),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to submit request");
+        return res.json();
+      })
+      .then((data) => {
+        alert("Request submitted successfully!");
+        // Clear form
+        setStudentName("");
+        setBorrowDate("");
+        setReturnDate("");
+        // Navigate after success
+        navigate("/student/dashboard");
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Failed to submit request");
+      });
   };
 
   return (
